@@ -23,6 +23,9 @@ import {
   MessageSquare,
   Stethoscope,
   ArrowRightLeft,
+  Pill,
+  MapPin,
+  Zap,
 } from "lucide-react"
 import Link from "next/link"
 import SmartCardScanner from "@/components/smart-card-scanner"
@@ -30,12 +33,18 @@ import ASHAConsultation from "@/components/asha-consultation"
 import LanguageSelector from "@/components/language-selector"
 import RealTimeTranslator from "@/components/real-time-translator"
 import { ThemeToggle } from "@/components/theme-toggle"
+import LowBandwidthMode from "@/components/low-bandwidth-mode"
 import { offlineStorage, type PatientData } from "@/lib/offline-storage"
 import { smsService } from "@/lib/sms-service"
 import { translationService, type Language } from "@/lib/translation-service"
+import { bandwidthOptimizer, type OptimizationSettings } from "@/lib/bandwidth-optimizer"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function HealthcareApp() {
-  const [isOnline, setIsOnline] = useState(false)
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [transcription, setTranscription] = useState("")
@@ -48,12 +57,22 @@ export default function HealthcareApp() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null)
   const [showTranslator, setShowTranslator] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState("en")
+  const [isLowBandwidth, setIsLowBandwidth] = useState(bandwidthOptimizer.isLowBandwidthConnection())
+  const [showBandwidthSettings, setShowBandwidthSettings] = useState(false)
+  const [optimizationSettings, setOptimizationSettings] = useState<OptimizationSettings>(
+    bandwidthOptimizer.getOptimizationSettings(),
+  )
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Initialize offline storage
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
   useEffect(() => {
     offlineStorage.init().catch(console.error)
   }, [])
@@ -62,6 +81,33 @@ export default function HealthcareApp() {
     const savedLang = translationService.getCurrentLanguage()
     setCurrentLanguage(savedLang)
   }, [])
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    const handleBandwidthChange = (event: CustomEvent) => {
+      setIsLowBandwidth(event.detail.isLowBandwidth)
+      setOptimizationSettings(event.detail.settings)
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    window.addEventListener("bandwidthchange", handleBandwidthChange as EventListener)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+      window.removeEventListener("bandwidthchange", handleBandwidthChange as EventListener)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
+
+  if (!user) {
+    return null // Will redirect to login
+  }
 
   const handleLanguageChange = (language: Language) => {
     setSelectedLanguage(language)
@@ -132,7 +178,6 @@ export default function HealthcareApp() {
       const currentLang = translationService.getCurrentLanguage()
 
       if (currentLang !== "en") {
-        // Process voice in selected language
         const voiceResult = await translationService.processVoiceInLanguage(audioBlob, currentLang)
         setTranscription(`${voiceResult.transcription} | ${voiceResult.translation}`)
       } else {
@@ -165,7 +210,6 @@ export default function HealthcareApp() {
         )
       }
 
-      // Save health record if patient is selected
       if (currentPatient) {
         const healthRecord = {
           id: `record_${Date.now()}`,
@@ -192,14 +236,6 @@ export default function HealthcareApp() {
     setShowCardScanner(false)
   }
 
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-    }
-  }, [])
-
   if (showConsultation) {
     return (
       <div className="min-h-screen bg-background p-4 max-w-4xl mx-auto">
@@ -220,6 +256,23 @@ export default function HealthcareApp() {
     )
   }
 
+  if (showBandwidthSettings) {
+    return (
+      <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => setShowBandwidthSettings(false)}>
+            ← Back to Main
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">Bandwidth Settings</h1>
+            <p className="text-sm text-muted-foreground">Optimize for your connection</p>
+          </div>
+        </div>
+        <LowBandwidthMode onSettingsChange={setOptimizationSettings} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
       {/* Header */}
@@ -228,16 +281,45 @@ export default function HealthcareApp() {
           <Heart className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-xl font-bold text-foreground">{t("health_service")}</h1>
-            <p className="text-sm text-muted-foreground">Health Service</p>
+            <p className="text-sm text-muted-foreground">Welcome, {user.name}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSelector onLanguageChange={handleLanguageChange} compact />
           <ThemeToggle />
-          {isOnline ? <Wifi className="h-5 w-5 text-primary" /> : <WifiOff className="h-5 w-5 text-muted-foreground" />}
-          <Badge variant={isOnline ? "default" : "secondary"}>{isOnline ? t("online") : t("offline")}</Badge>
+          <Button variant="ghost" size="sm" onClick={logout}>
+            Logout
+          </Button>
+          {isOnline ? (
+            <div className="flex items-center gap-1">
+              <Wifi className="h-5 w-5 text-primary" />
+              {isLowBandwidth && <Zap className="h-3 w-3 text-accent" />}
+            </div>
+          ) : (
+            <WifiOff className="h-5 w-5 text-muted-foreground" />
+          )}
+          <Badge variant={isOnline ? (isLowBandwidth ? "secondary" : "default") : "destructive"}>
+            {isOnline ? (isLowBandwidth ? "Slow" : "Online") : "Offline"}
+          </Badge>
         </div>
       </div>
+
+      {isLowBandwidth && isOnline && (
+        <Card className="mb-6 border-accent">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Zap className="h-5 w-5 text-accent mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-accent">Low Bandwidth Detected</p>
+                <p className="text-xs text-muted-foreground mt-1">Optimizations are enabled to improve performance</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowBandwidthSettings(true)}>
+                Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Language Selection */}
       <LanguageSelector onLanguageChange={handleLanguageChange} />
@@ -327,8 +409,61 @@ export default function HealthcareApp() {
       <div className="grid grid-cols-1 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <Link href="/dashboard">
+            <Link href="/medicine">
               <Button className="w-full" size="lg">
+                <Pill className="h-5 w-5 mr-2" />
+                AI Medicine Bot
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center mt-2">Get AI-powered medicine recommendations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Link href="/symptom-checker">
+              <Button variant="outline" className="w-full bg-transparent" size="lg">
+                <Stethoscope className="h-5 w-5 mr-2" />
+                AI Symptom Checker
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center mt-2">Check symptoms and get health insights</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Link href="/pharmacy">
+              <Button variant="outline" className="w-full bg-transparent" size="lg">
+                <MapPin className="h-5 w-5 mr-2" />
+                Pharmacy Finder
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Find nearby pharmacies and medicine availability
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Button
+              onClick={() => setShowBandwidthSettings(true)}
+              variant="outline"
+              className="w-full bg-transparent"
+              size="lg"
+            >
+              <Zap className="h-5 w-5 mr-2" />
+              Bandwidth Settings
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">Optimize app for your connection speed</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Link href="/dashboard">
+              <Button variant="outline" className="w-full bg-transparent" size="lg">
                 <BarChart3 className="h-5 w-5 mr-2" />
                 {t("village_dashboard")}
               </Button>

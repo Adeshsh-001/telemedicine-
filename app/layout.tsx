@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "../components/theme-provider"
 import { Suspense } from "react"
+import { AuthProvider } from "../lib/auth-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>
           <ThemeProvider defaultTheme="system" storageKey="healthcare-app-theme">
-            {children}
+            <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
         </Suspense>
         <Analytics />
