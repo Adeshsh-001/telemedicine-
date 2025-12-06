@@ -1,0 +1,49 @@
+{
+  "medicines": [
+    {
+      "name": "Amoxicillin",
+      "generic_name": "Amoxicillin",
+      "category": "antibiotic",
+      "dosage_form": "tablet",
+      "strength": "500mg",
+      "manufacturer": "Generic",
+      "description": "Beta-lactam antibiotic",
+      "indications": "Bacterial infections, respiratory infections",
+      "contraindications": "Penicillin allergy",
+      "side_effects": "Allergic reactions, diarrhea",
+      "dosage_instructions": "500mg twice daily for 7 days",
+      "price_per_unit": 2.5,
+      "is_prescription_required": true
+    },
+    {
+      "name": "Paracetamol",
+      "generic_name": "Acetaminophen",
+      "category": "painkiller",
+      "dosage_form": "tablet",
+      "strength": "500mg",
+      "manufacturer": "Generic",
+      "description": "Pain reliever and fever reducer",
+      "indications": "Pain, fever",
+      "contraindications": "Liver disease",
+      "side_effects": "Rare, liver damage at high doses",
+      "dosage_instructions": "500mg-1000mg every 4-6 hours, max 4000mg daily",
+      "price_per_unit": 1.0,
+      "is_prescription_required": false
+    },
+    {
+      "name": "Ibuprofen",
+      "generic_name": "Ibuprofen",
+      "category": "anti-inflammatory",
+      "dosage_form": "tablet",
+      "strength": "400mg",
+      "manufacturer": "Generic",
+      "description": "NSAID pain reliever",
+      "indications": "Pain, inflammation, fever",
+      "contraindications": "NSAID allergy, stomach ulcers",
+      "side_effects": "Stomach upset, heartburn",
+      "dosage_instructions": "400mg every 4-6 hours as needed",
+      "price_per_unit": 1.5,
+      "is_prescription_required": false
+    }
+  ]
+}

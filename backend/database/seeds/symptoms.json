@@ -1,0 +1,39 @@
+{
+  "symptoms": [
+    {
+      "name": "Fever",
+      "category": "systemic",
+      "severity_level": 3,
+      "description": "Body temperature above 98.6°F (37°C)",
+      "common_causes": "Infection, viral illness, inflammation"
+    },
+    {
+      "name": "Cough",
+      "category": "respiratory",
+      "severity_level": 2,
+      "description": "Involuntary expulsion of air from lungs",
+      "common_causes": "Cold, flu, throat irritation, smoking"
+    },
+    {
+      "name": "Headache",
+      "category": "neurological",
+      "severity_level": 2,
+      "description": "Pain in head or upper neck",
+      "common_causes": "Tension, migraine, dehydration, fever"
+    },
+    {
+      "name": "Body Pain",
+      "category": "musculoskeletal",
+      "severity_level": 2,
+      "description": "Aches in muscles or joints",
+      "common_causes": "Flu, exertion, arthritis, infection"
+    },
+    {
+      "name": "Fatigue",
+      "category": "systemic",
+      "severity_level": 1,
+      "description": "Extreme tiredness or lack of energy",
+      "common_causes": "Illness, poor sleep, stress, anemia"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "app_name": "Healthcare AI Realm",
+  "app_id": "healthcareai-xxxxx",
+  "sync": {
+    "state": "enabled",
+    "partition": {
+      "key": "village_id",
+      "type": "string",
+      "permissions": {
+        "read": true,
+        "write": true
+      }
+    }
+  },
+  "collections": {
+    "users": {
+      "schema": {
+        "bsonType": "object",
+        "required": ["_id", "village_id", "email"],
+        "properties": {
+          "_id": { "bsonType": "objectId" },
+          "village_id": { "bsonType": "string" },
+          "email": { "bsonType": "string" },
+          "phone": { "bsonType": "string" },
+          "role": { "bsonType": "string", "enum": ["patient", "asha", "doctor", "admin"] },
+          "created_at": { "bsonType": "date" }
+        }
+      }
+    },
+    "patients": {
+      "schema": {
+        "bsonType": "object",
+        "required": ["_id", "village_id", "user_id"],
+        "properties": {
+          "_id": { "bsonType": "objectId" },
+          "village_id": { "bsonType": "string" },
+          "user_id": { "bsonType": "objectId" },
+          "health_records": { "bsonType": "array" },
+          "vaccination_records": { "bsonType": "array" }
+        }
+      }
+    },
+    "medicines": {
+      "schema": {
+        "bsonType": "object",
+        "required": ["_id", "village_id", "name"],
+        "properties": {
+          "_id": { "bsonType": "objectId" },
+          "village_id": { "bsonType": "string" },
+          "name": { "bsonType": "string" },
+          "category": { "bsonType": "string" },
+          "price": { "bsonType": "double" }
+        }
+      }
+    },
+    "pharmacies": {
+      "schema": {
+        "bsonType": "object",
+        "required": ["_id", "village_id", "name"],
+        "properties": {
+          "_id": { "bsonType": "objectId" },
+          "village_id": { "bsonType": "string" },
+          "name": { "bsonType": "string" },
+          "location": { "bsonType": "object" },
+          "inventory": { "bsonType": "array" }
+        }
+      }
+    }
+  }
+}
